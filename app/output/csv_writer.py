@@ -33,3 +33,26 @@ def write_rejected_records(data, file_path=None):
 		raise CSVWriterError(
 			f"Could not write rejected records to {output_path}."
 		) from error
+
+
+def write_final_dataset(data, file_path=None):
+	if file_path is None:
+		file_path = (
+			Path(__file__).parents[2]
+			/ "data"
+			/ "processed"
+			/ "dataset.csv"
+		)
+
+	output_path = Path(file_path)
+	logger.info("Writing final dataset to %s", output_path)
+
+	try:
+		output_path.parent.mkdir(parents=True, exist_ok=True)
+		pd.DataFrame(data).to_csv(output_path, index=False, encoding="utf-8")
+		logger.info("Wrote %d final dataset records", len(data))
+	except (OSError, ValueError, TypeError) as error:
+		logger.exception("Could not write final dataset: %s", output_path)
+		raise CSVWriterError(
+			f"Could not write final dataset to {output_path}."
+		) from error

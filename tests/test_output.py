@@ -1,6 +1,6 @@
 import pandas as pd
 
-from app.output.csv_writer import write_rejected_records
+from app.output.csv_writer import write_final_dataset, write_rejected_records
 
 
 def test_write_rejected_records_creates_csv(tmp_path):
@@ -14,4 +14,18 @@ def test_write_rejected_records_creates_csv(tmp_path):
 	result = pd.read_csv(output_path)
 	assert result.to_dict(orient="records") == [
 		{"student_id": 1001, "error_reason": "Invalid GPA; "},
+	]
+
+
+def test_write_final_dataset_creates_csv(tmp_path):
+	output_path = tmp_path / "processed" / "dataset.csv"
+	final_data = pd.DataFrame([
+		{"student_id": 1001, "student_name": "Ahmed Ali", "gpa": 3.45},
+	])
+
+	write_final_dataset(final_data, output_path)
+
+	result = pd.read_csv(output_path)
+	assert result.to_dict(orient="records") == [
+		{"student_id": 1001, "student_name": "Ahmed Ali", "gpa": 3.45},
 	]
