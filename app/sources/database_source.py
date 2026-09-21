@@ -1,26 +1,25 @@
-import psycopg
+import sqlite3
+from pathlib import Path
 
 
 class DatabaseConnectionError(Exception):
-	"""Raised when a PostgreSQL connection cannot be established."""
+	"""Raised when a SQLite connection cannot be established."""
 
 
 class DatabaseQueryError(Exception):
-	"""Raised when a PostgreSQL query cannot be executed."""
+	"""Raised when a SQLite query cannot be executed."""
 
 
 def get_connection():
+	database_path = Path(__file__).parents[2] / "data" / "student_data.db"
+
 	try:
-		return psycopg.connect(
-			host="localhost",
-			port=5432,
-			dbname="student_data",
-			user="postgres",
-			password="123321",
-		)
-	except psycopg.OperationalError as error:
+		connection = sqlite3.connect(database_path)
+		connection.row_factory = sqlite3.Row
+		return connection
+	except sqlite3.Error as error:
 		raise DatabaseConnectionError(
-			"Could not connect to the PostgreSQL database."
+			"Could not connect to the SQLite database."
 		) from error
 
 
@@ -42,11 +41,10 @@ def fetch_enrollments():
 		with get_connection() as connection:
 			with connection.cursor() as cursor:
 				cursor.execute(query)
-				columns = [column.name for column in cursor.description]
-				return [dict(zip(columns, row)) for row in cursor.fetchall()]
+				return [dict(row) for row in cursor.fetchall()]
 	except DatabaseConnectionError:
 		raise
-	except psycopg.Error as error:
+	except sqlite3.Error as error:
 		raise DatabaseQueryError(
 			"Could not execute the enrollment query."
 		) from error
