@@ -1,85 +1,100 @@
 import pandas as pd
 
+from app.utils.logger import get_logger
+
+
+logger = get_logger("cleaner")
+
 
 def clean_data(df):
+    logger.info("Starting data cleaning for %d records", len(df))
 
-    data = df.copy()
+    try:
+        data = df.copy()
 
-    # --------------------------------
-    # 1. إزالة المسافات الزائدة
-    # --------------------------------
-    text_columns = data.select_dtypes(
-        include="object"
-    ).columns
+        # --------------------------------
+        # 1. إزالة المسافات الزائدة
+        # --------------------------------
+        text_columns = data.select_dtypes(
+            include="object"
+        ).columns
 
-    for column in text_columns:
-        data[column] = data[column].str.strip()
+        for column in text_columns:
+            data[column] = data[column].str.strip()
 
-    # --------------------------------
-    # 2. توحيد الكتابة للأعمدة النصية
-    # --------------------------------
-    if "city" in data.columns:
-        data["city"] = data["city"].str.title()
+        # --------------------------------
+        # 2. توحيد الكتابة للأعمدة النصية
+        # --------------------------------
+        if "city" in data.columns:
+            data["city"] = data["city"].str.title()
 
-    if "status" in data.columns:
-        data["status"] = data["status"].str.title()
+        if "status" in data.columns:
+            data["status"] = data["status"].str.title()
 
-    if "major" in data.columns:
-        data["major"] = data["major"].str.title()
+        if "major" in data.columns:
+            data["major"] = data["major"].str.title()
 
-    if "course" in data.columns:
-        data["course"] = data["course"].str.title()
+        if "course" in data.columns:
+            data["course"] = data["course"].str.title()
 
-    # --------------------------------
-    # 3. تحويل الأعمدة الرقمية
-    # --------------------------------
-    numeric_columns = [
-        "student_id",
-        "age",
-        "gpa",
-        "attendance",
-        "score",
-        "semester"
-    ]
+        # --------------------------------
+        # 3. تحويل الأعمدة الرقمية
+        # --------------------------------
+        numeric_columns = [
+            "student_id",
+            "age",
+            "gpa",
+            "attendance",
+            "score",
+            "semester"
+        ]
 
-    for column in numeric_columns:
-        if column in data.columns:
-            data[column] = pd.to_numeric(
-                data[column],
-                errors="coerce"
-            )
+        for column in numeric_columns:
+            if column in data.columns:
+                data[column] = pd.to_numeric(
+                    data[column],
+                    errors="coerce"
+                )
 
-    # --------------------------------
-    # 4. معالجة القيم المفقودة
-    # --------------------------------
+        # --------------------------------
+        # 4. معالجة القيم المفقودة
+        # --------------------------------
 
-    # الأعمدة الرقمية:
-    # استخدام الوسيط Median
-    numeric_columns = [
-        "age",
-        "gpa",
-        "attendance",
-        "score"
-    ]
+        # الأعمدة الرقمية:
+        # استخدام الوسيط Median
+        numeric_columns = [
+            "age",
+            "gpa",
+            "attendance",
+            "score"
+        ]
 
-    for column in numeric_columns:
-        if column in data.columns:
-            data[column] = data[column].fillna(
-                data[column].median()
-            )
+        for column in numeric_columns:
+            if column in data.columns:
+                data[column] = data[column].fillna(
+                    data[column].median()
+                )
 
-    # الأعمدة النصية:
-    # استخدام Unknown
-    text_columns = data.select_dtypes(
-        include="object"
-    ).columns
+        # الأعمدة النصية:
+        # استخدام Unknown
+        text_columns = data.select_dtypes(
+            include="object"
+        ).columns
 
-    for column in text_columns:
-        data[column] = data[column].fillna("Unknown")
+        for column in text_columns:
+            data[column] = data[column].fillna("Unknown")
 
-    # --------------------------------
-    # 5. إزالة السجلات المكررة بالكامل
-    # --------------------------------
-    data = data.drop_duplicates()
-
-    return data
+        # --------------------------------
+        # 5. إزالة السجلات المكررة بالكامل
+        # --------------------------------
+        before_deduplication = len(data)
+        data = data.drop_duplicates()
+        logger.info(
+            "Data cleaning completed: %d records, %d duplicates removed",
+            len(data),
+            before_deduplication - len(data),
+        )
+        return data
+    except Exception:
+        logger.exception("Data cleaning failed")
+        raise
