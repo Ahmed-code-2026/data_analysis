@@ -11,7 +11,7 @@ class DatabaseQueryError(Exception):
 
 
 def get_connection():
-	database_path = Path(__file__).parents[2] / "data" / "student_data.db"
+	database_path = Path(__file__).parents[2] / "database" / "students.db"
 
 	try:
 		connection = sqlite3.connect(database_path)
@@ -39,9 +39,12 @@ def fetch_enrollments():
 
 	try:
 		with get_connection() as connection:
-			with connection.cursor() as cursor:
+			cursor = connection.cursor()
+			try:
 				cursor.execute(query)
 				return [dict(row) for row in cursor.fetchall()]
+			finally:
+				cursor.close()
 	except DatabaseConnectionError:
 		raise
 	except sqlite3.Error as error:
