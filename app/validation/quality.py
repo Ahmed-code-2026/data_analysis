@@ -1,7 +1,13 @@
 import pandas as pd
 
+from app.utils.logger import get_logger
+
+
+logger = get_logger("quality")
+
 
 def validate_data(df):
+    logger.info("Starting data validation for %d records", len(df))
 
     data = df.copy()
 
@@ -21,6 +27,7 @@ def validate_data(df):
     ]
 
     if missing_columns:
+        logger.error("Missing required columns: %s", missing_columns)
         raise ValueError(
             f"Missing required columns: {missing_columns}"
         )
@@ -47,29 +54,47 @@ def validate_data(df):
     data.loc[
         data["student_id"].isna(),
         "error_reason"
-    ] += "Missing student_id; "
+    ] += "Missing or invalid student_id; "
+
+    # student_id مكرر
+    duplicate_student_ids = (
+        data["student_id"].notna()
+        & data["student_id"].duplicated(keep=False)
+    )
+    data.loc[
+        duplicate_student_ids,
+        "error_reason"
+    ] += "Duplicate student_id; "
 
     # العمر خارج النطاق
     data.loc[
-        (data["age"] < 16) | (data["age"] > 80),
+        data["age"].isna()
+        | (data["age"] < 16)
+        | (data["age"] > 80),
         "error_reason"
     ] += "Invalid age; "
 
     # GPA خارج النطاق
     data.loc[
-        (data["gpa"] < 0) | (data["gpa"] > 4),
+        data["gpa"].isna()
+        | (data["gpa"] < 0)
+        | (data["gpa"] > 4),
         "error_reason"
     ] += "Invalid GPA; "
 
     # الحضور خارج النطاق
     data.loc[
-        (data["attendance"] < 0) | (data["attendance"] > 100),
+        data["attendance"].isna()
+        | (data["attendance"] < 0)
+        | (data["attendance"] > 100),
         "error_reason"
     ] += "Invalid attendance; "
 
     # الدرجة خارج النطاق
     data.loc[
-        (data["score"] < 0) | (data["score"] > 100),
+        data["score"].isna()
+        | (data["score"] < 0)
+        | (data["score"] > 100),
         "error_reason"
     ] += "Invalid score; "
 
@@ -87,4 +112,9 @@ def validate_data(df):
         columns=["error_reason"]
     )
 
+    logger.info(
+        "Data validation completed: %d valid, %d invalid",
+        len(valid_data),
+        len(invalid_data),
+    )
     return valid_data, invalid_data
